@@ -122,6 +122,8 @@ class UefiVariable(object):
             Tuple: (error code, string of variable data)
         """
         err = 0
+        name = name.rstrip('\x00')
+
         if os.name == 'nt':
             efi_var = create_string_buffer(EFI_VAR_MAX_BUFFER_SIZE)
             if self._GetFirmwareEnvironmentVariable is not None:
@@ -267,6 +269,9 @@ class UefiVariable(object):
         """
         success = 0  # Fail
 
+        # Remove null termination on the name, if it exists.
+        name = name.rstrip('\x00')
+
         if os.name == 'nt':
             var_len = 0
             err = 0
@@ -306,8 +311,7 @@ class UefiVariable(object):
                 logging.error(WinError())
             return success
         else:
-            # There is a null terminator at the end of the name
-            path = '/sys/firmware/efi/efivars/' + name[:-1] + '-' + str(guid)
+            path = '/sys/firmware/efi/efivars/' + name + '-' + str(guid)
             if var is None:
                 # we are deleting the variable
                 if (os.path.exists(path)):
@@ -327,5 +331,6 @@ class UefiVariable(object):
                 packed = struct.pack('=I', attrs)
                 packed += var
                 fd.write(packed)
+            return success
 
-        return 1
+        return 0
